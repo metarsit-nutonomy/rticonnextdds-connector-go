@@ -147,7 +147,7 @@ func newInfos(input *Input) (infos *Infos) {
 * Public Functions *
 *******************/
 
-// NewConnector is a constructor of Connector
+// NewConnector is a constructor of Connector using XML
 func NewConnector(configName string, fileName string) (connector *Connector, err error) {
 	connector = new(Connector)
 
@@ -163,6 +163,27 @@ func NewConnector(configName string, fileName string) (connector *Connector, err
 	}
 
 	return connector, nil
+}
+
+// NewConnectorFromParticipant is a constructor of Connector using Map of Participants
+func NewConnectorFromParticipant(participants map[string]string) (connectorMap *map[string]Connector, err error) {
+	connectorMap = new(map[string]Connector)
+	
+	for participant, containerName := range participants {
+		connector = new(Connector)
+		participantCStr := C.CString(participant)
+		defer C.free(unsafe.Pointer(participantCStr))
+		containerNameCStr := C.CString(containerName)
+		defer C.Free(unsafe.Pointer(containerNameCStr))
+
+		connector.native = C.RTIDDSConnector_new_from_participant(participantCStr, containerNameCStr)
+		if connector.native == nil {
+			err = errors.New("Invalid participant profile, unable to create participant")
+			return nil, err
+		}
+		connectorMap[participant] = append(connectorMap[participant], connector)
+	}
+	return connectorMap, nil
 }
 
 // Delete is a destructor of Connector
